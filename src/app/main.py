@@ -1,8 +1,8 @@
 import os
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from prometheus_client import make_asgi_app
 import redis.asyncio as aioredis
 from sqlalchemy import text
@@ -65,6 +65,13 @@ async def read_index():
         </body>
     </html>
     """
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    favicon_path = os.path.join("src", "app", "static", "favicon.ico")
+    if os.path.exists(favicon_path):
+        return FileResponse(favicon_path)
+    return Response(status_code=204)
 
 @app.get("/health", status_code=status.HTTP_200_OK)
 async def health_check(db=Depends(get_db)):
