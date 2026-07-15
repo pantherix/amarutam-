@@ -47,6 +47,62 @@ app.mount("/static", StaticFiles(directory="src/app/static"), name="static")
 async def startup_event():
     # Initialize database tables
     await init_db()
+    
+    # Auto-seed default admin and products if empty
+    from sqlalchemy import select
+    from src.app.models.entities import User, Saree
+    from src.app.security import get_password_hash
+    from src.app.database import AsyncSessionLocal
+    
+    async with AsyncSessionLocal() as db:
+        res = await db.execute(select(User).where(User.email == "owner@zari.com"))
+        if not res.scalar_one_or_none():
+            print("Auto-seeding default admin account and initial sarees...")
+            admin = User(
+                email="owner@zari.com",
+                password_hash=get_password_hash("securepassword123"),
+                first_name="Meera",
+                last_name="Sen",
+                role="admin"
+            )
+            db.add(admin)
+            
+            saree1 = Saree(
+                title="Royal Crimson Banarasi Silk Saree",
+                description="Exquisite handwoven Banarasi pure silk saree featuring detailed gold zari embroidery and elegant borders. Perfect for bridal and festive occasions.",
+                price=4999.00,
+                fabric="Banarasi Silk",
+                color="Crimson Red",
+                image_url="/static/images/saree_banarasi_red.png",
+                secondary_images='[]',
+                status="in_stock",
+                clicks=24
+            )
+            saree2 = Saree(
+                title="Midnight Blue Kanjeevaram Saree",
+                description="Classic Midnight Blue Kanjeevaram pure silk saree with heavy gold weave details and contrast pallu, representing traditional Tamil heritage.",
+                price=6500.00,
+                fabric="Kanjeevaram Silk",
+                color="Midnight Blue",
+                image_url="/static/images/saree_kanjeevaram_blue.png",
+                secondary_images='[]',
+                status="in_stock",
+                clicks=15
+            )
+            saree3 = Saree(
+                title="Mint Green Organza Floral Saree",
+                description="Modern and lightweight Mint Green Organza saree decorated with delicate hand-painted floral motifs and a classy gold-dusted border.",
+                price=2200.00,
+                fabric="Organza",
+                color="Mint Green",
+                image_url="/static/images/saree_organza_mint.png",
+                secondary_images='[]',
+                status="in_stock",
+                clicks=8
+            )
+            db.add_all([saree1, saree2, saree3])
+            await db.commit()
+            print("Database auto-seeding completed.")
 
 # Serve index.html at root
 @app.get("/", response_class=HTMLResponse)
