@@ -54,7 +54,22 @@ async def read_index():
     index_path = os.path.join("src", "app", "static", "index.html")
     if os.path.exists(index_path):
         with open(index_path, "r", encoding="utf-8") as f:
-            return f.read()
+            content = f.read()
+            
+        if settings.GOOGLE_ANALYTICS_ID:
+            ga_script = f"""
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id={settings.GOOGLE_ANALYTICS_ID}"></script>
+            <script>
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){{dataLayer.push(arguments);}}
+              gtag('js', new Date());
+              gtag('config', '{settings.GOOGLE_ANALYTICS_ID}');
+            </script>
+            """
+            content = content.replace("</head>", f"{ga_script}\n</head>")
+            
+        return content
     return """
     <html>
         <head><title>Zari Saree Catalog</title></head>

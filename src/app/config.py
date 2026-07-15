@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # WhatsApp Configuration
     WHATSAPP_PHONE_NUMBER: str = "919876543210"  # Target WhatsApp number for orders
     
+    # Analytics
+    GOOGLE_ANALYTICS_ID: Optional[str] = None
+    
     @property
     def DATABASE_URL(self) -> str:
         # If POSTGRES_HOST is not set, default to SQLite
