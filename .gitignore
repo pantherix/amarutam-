@@ -61,3 +61,7 @@ pythonenv/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Databases
+*.db
+*.sqlite

@@ -5,21 +5,10 @@ from src.app.schemas.schemas import (
     UserRegister,
     UserLogin,
     UserResponse,
-    MFASetupResponse,
-    MFAVerifyRequest,
-    ProfileResponse,
-    DoctorProfileResponse,
-    DoctorPublicResponse,
-    AvailabilitySlotCreate,
-    AvailabilitySlotResponse,
-    ConsultationCreate,
-    ConsultationResponse,
-    MedicationItem,
-    PrescriptionCreate,
-    PrescriptionResponse,
-    PaymentInitiate,
-    PaymentResponse,
-    AnalyticsOverview
+    SareeCreate,
+    SareeUpdate,
+    SareeResponse,
+    SareeAnalyticsResponse
 )
 
 __all__ = [
@@ -29,19 +18,8 @@ __all__ = [
     "UserRegister",
     "UserLogin",
     "UserResponse",
-    "MFASetupResponse",
-    "MFAVerifyRequest",
-    "ProfileResponse",
-    "DoctorProfileResponse",
-    "DoctorPublicResponse",
-    "AvailabilitySlotCreate",
-    "AvailabilitySlotResponse",
-    "ConsultationCreate",
-    "ConsultationResponse",
-    "MedicationItem",
-    "PrescriptionCreate",
-    "PrescriptionResponse",
-    "PaymentInitiate",
-    "PaymentResponse",
-    "AnalyticsOverview"
+    "SareeCreate",
+    "SareeUpdate",
+    "SareeResponse",
+    "SareeAnalyticsResponse"
 ]

@@ -1,12 +1,12 @@
 import uuid
-from typing import AsyncGenerator, Callable
+from typing import Callable
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.database import get_db
 from src.app.models.entities import User
-from src.app.repositories import UserRepository, DoctorRepository, BookingRepository
+from src.app.repositories import UserRepository
 from src.app.services import ComplianceService
 from src.app.security import decode_token
 
@@ -34,19 +34,16 @@ async def get_current_user(
         )
         
     user_repo = UserRepository(db)
-    user = await user_repo.get_by_id(uuid.UUID(user_id_str))
+    try:
+        user = await user_repo.get_by_id(uuid.UUID(user_id_str))
+    except ValueError:
+        user = None
+        
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
-        )
-        
-    # Check if MFA is enabled but NOT verified in token
-    if user.is_mfa_enabled and not payload.get("mfa_verified", False):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="MFA verification required",
         )
         
     return user

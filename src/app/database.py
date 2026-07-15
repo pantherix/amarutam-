@@ -26,5 +26,5 @@ async def init_db() -> None:
     # Convenient helper to create tables in SQLite/Postgres for local verification and testing
     async with engine.begin() as conn:
         # Import entities here to register them with Base
-        from src.app.models import User, Profile, Doctor, AvailabilitySlot, Consultation, Prescription, Payment, AuditLog
+        from src.app.models import User, Saree, AuditLog
         await conn.run_sync(Base.metadata.create_all)

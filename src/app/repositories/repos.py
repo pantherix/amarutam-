@@ -3,11 +3,10 @@ import json
 import hashlib
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from sqlalchemy import select, update, and_
+from sqlalchemy import select, update, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from src.app.models.entities import User, Profile, Doctor, AvailabilitySlot, Consultation, Prescription, Payment, AuditLog
+from src.app.models.entities import User, Saree, AuditLog
 from src.app.security import get_password_hash
 
 class BaseRepository:
@@ -17,17 +16,13 @@ class BaseRepository:
 class UserRepository(BaseRepository):
     async def get_by_id(self, user_id: uuid.UUID) -> Optional[User]:
         result = await self.db.execute(
-            select(User)
-            .options(selectinload(User.profile), selectinload(User.doctor_profile))
-            .where(User.id == user_id)
+            select(User).where(User.id == user_id)
         )
         return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> Optional[User]:
         result = await self.db.execute(
-            select(User)
-            .options(selectinload(User.profile), selectinload(User.doctor_profile))
-            .where(User.email == email)
+            select(User).where(User.email == email)
         )
         return result.scalar_one_or_none()
 
@@ -35,248 +30,116 @@ class UserRepository(BaseRepository):
         self,
         email: str,
         password_plain: str,
-        role: str,
         first_name: str,
         last_name: str,
-        phone: str,
-        date_of_birth: Any,
-        is_mfa_enabled: bool = False,
-        mfa_secret: Optional[str] = None
+        role: str = "admin"
     ) -> User:
-        # Create User
         password_hash = get_password_hash(password_plain)
         user = User(
             email=email,
             password_hash=password_hash,
-            role=role,
-            is_mfa_enabled=is_mfa_enabled,
-            mfa_secret=mfa_secret
-        )
-        self.db.add(user)
-        await self.db.flush()  # Generate user.id
-
-        # Create Profile (property handles transparent GCM encryption)
-        profile = Profile(
-            user_id=user.id,
             first_name=first_name,
             last_name=last_name,
-            phone=phone,
-            date_of_birth=date_of_birth
+            role=role
         )
-        self.db.add(profile)
-        user.profile = profile
-        
+        self.db.add(user)
         await self.db.flush()
         return user
 
-    async def enable_mfa(self, user_id: uuid.UUID, mfa_secret: str) -> None:
-        await self.db.execute(
-            update(User)
-            .where(User.id == user_id)
-            .values(is_mfa_enabled=True, mfa_secret=mfa_secret)
-        )
-
-
-class DoctorRepository(BaseRepository):
-    async def get_by_id(self, doctor_id: uuid.UUID) -> Optional[Doctor]:
+class SareeRepository(BaseRepository):
+    async def get_by_id(self, saree_id: uuid.UUID) -> Optional[Saree]:
         result = await self.db.execute(
-            select(Doctor)
-            .options(selectinload(Doctor.user).selectinload(User.profile))
-            .where(Doctor.id == doctor_id)
+            select(Saree).where(Saree.id == saree_id)
         )
         return result.scalar_one_or_none()
 
-    async def get_by_user_id(self, user_id: uuid.UUID) -> Optional[Doctor]:
-        result = await self.db.execute(
-            select(Doctor).where(Doctor.user_id == user_id)
-        )
-        return result.scalar_one_or_none()
-
-    async def create_doctor_profile(
+    async def create_saree(
         self,
-        user_id: uuid.UUID,
-        specialty: str,
-        bio: str,
-        consultation_fee: float
-    ) -> Doctor:
-        doctor = Doctor(
-            user_id=user_id,
-            specialty=specialty,
-            bio=bio,
-            consultation_fee=consultation_fee
+        title: str,
+        description: str,
+        price: float,
+        fabric: str,
+        color: str,
+        image_url: str,
+        secondary_images: Optional[List[str]] = None,
+        status: str = "in_stock"
+    ) -> Saree:
+        sec_images_str = json.dumps(secondary_images) if secondary_images else None
+        saree = Saree(
+            title=title,
+            description=description,
+            price=price,
+            fabric=fabric,
+            color=color,
+            image_url=image_url,
+            secondary_images=sec_images_str,
+            status=status
         )
-        self.db.add(doctor)
+        self.db.add(saree)
         await self.db.flush()
-        return doctor
+        return saree
 
-    async def list_doctors(
+    async def update_saree(
         self,
-        specialty: Optional[str] = None,
-        min_rating: Optional[float] = None
-    ) -> List[Doctor]:
-        query = select(Doctor).options(selectinload(Doctor.user).selectinload(User.profile))
+        saree_id: uuid.UUID,
+        update_data: Dict[str, Any]
+    ) -> Optional[Saree]:
+        saree = await self.get_by_id(saree_id)
+        if not saree:
+            return None
         
+        for key, value in update_data.items():
+            if key == "secondary_images" and isinstance(value, list):
+                saree.secondary_images = json.dumps(value)
+            elif hasattr(saree, key):
+                setattr(saree, key, value)
+                
+        await self.db.flush()
+        return saree
+
+    async def delete_saree(self, saree_id: uuid.UUID) -> bool:
+        saree = await self.get_by_id(saree_id)
+        if not saree:
+            return False
+        await self.db.delete(saree)
+        await self.db.flush()
+        return True
+
+    async def list_sarees(
+        self,
+        fabric: Optional[str] = None,
+        color: Optional[str] = None,
+        status_filter: Optional[str] = None,
+        min_price: Optional[float] = None,
+        max_price: Optional[float] = None
+    ) -> List[Saree]:
+        query = select(Saree)
         conditions = []
-        if specialty:
-            conditions.append(Doctor.specialty.ilike(f"%{specialty}%"))
-        if min_rating:
-            conditions.append(Doctor.rating >= min_rating)
+        
+        if fabric:
+            conditions.append(Saree.fabric.ilike(f"%{fabric}%"))
+        if color:
+            conditions.append(Saree.color.ilike(f"%{color}%"))
+        if status_filter:
+            conditions.append(Saree.status == status_filter)
+        if min_price is not None:
+            conditions.append(Saree.price >= min_price)
+        if max_price is not None:
+            conditions.append(Saree.price <= max_price)
             
         if conditions:
             query = query.where(and_(*conditions))
             
-        result = await self.db.execute(query)
+        result = await self.db.execute(query.order_by(Saree.created_at.desc()))
         return list(result.scalars().all())
 
-
-class BookingRepository(BaseRepository):
-    async def create_slot(
-        self,
-        doctor_id: uuid.UUID,
-        start_time: datetime,
-        end_time: datetime
-    ) -> AvailabilitySlot:
-        slot = AvailabilitySlot(
-            doctor_id=doctor_id,
-            start_time=start_time,
-            end_time=end_time,
-            status="available"
-        )
-        self.db.add(slot)
-        await self.db.flush()
-        return slot
-
-    async def get_slots_for_doctor(
-        self,
-        doctor_id: uuid.UUID,
-        available_only: bool = True
-    ) -> List[AvailabilitySlot]:
-        query = select(AvailabilitySlot).where(AvailabilitySlot.doctor_id == doctor_id)
-        if available_only:
-            query = query.where(AvailabilitySlot.status == "available")
-        result = await self.db.execute(query)
-        return list(result.scalars().all())
-
-    async def get_slot_by_id(self, slot_id: uuid.UUID) -> Optional[AvailabilitySlot]:
-        result = await self.db.execute(
-            select(AvailabilitySlot).where(AvailabilitySlot.id == slot_id)
-        )
-        return result.scalar_one_or_none()
-
-    async def get_slot_by_id_for_update(self, slot_id: uuid.UUID) -> Optional[AvailabilitySlot]:
-        # Critical pessimistic locking for double booking prevention
-        result = await self.db.execute(
-            select(AvailabilitySlot)
-            .where(AvailabilitySlot.id == slot_id)
-            .with_for_update()
-        )
-        return result.scalar_one_or_none()
-
-    async def create_consultation(
-        self,
-        patient_id: uuid.UUID,
-        doctor_id: uuid.UUID,
-        slot_id: uuid.UUID
-    ) -> Consultation:
-        consultation = Consultation(
-            patient_id=patient_id,
-            doctor_id=doctor_id,
-            slot_id=slot_id,
-            status="scheduled",
-            payment_status="pending"
-        )
-        self.db.add(consultation)
-        await self.db.flush()
-        return consultation
-
-    async def get_consultation_by_id(self, consultation_id: uuid.UUID) -> Optional[Consultation]:
-        result = await self.db.execute(
-            select(Consultation)
-            .options(
-                selectinload(Consultation.prescription),
-                selectinload(Consultation.doctor).selectinload(Doctor.user).selectinload(User.profile),
-                selectinload(Consultation.patient).selectinload(User.profile)
-            )
-            .where(Consultation.id == consultation_id)
-        )
-        return result.scalar_one_or_none()
-
-    async def list_consultations(self, user_id: uuid.UUID, role: str) -> List[Consultation]:
-        query = select(Consultation).options(
-            selectinload(Consultation.prescription),
-            selectinload(Consultation.doctor).selectinload(Doctor.user).selectinload(User.profile),
-            selectinload(Consultation.patient).selectinload(User.profile)
-        )
-        if role == "patient":
-            query = query.where(Consultation.patient_id == user_id)
-        elif role == "doctor":
-            # Find the doctor entity first
-            result = await self.db.execute(select(Doctor.id).where(Doctor.user_id == user_id))
-            doc_id = result.scalar_one_or_none()
-            if not doc_id:
-                return []
-            query = query.where(Consultation.doctor_id == doc_id)
-        else:
-            # Admin gets all
-            pass
-            
-        result = await self.db.execute(query.order_by(Consultation.created_at.desc()))
-        return list(result.scalars().all())
-
-    async def create_prescription(
-        self,
-        consultation_id: uuid.UUID,
-        diagnosis: str,
-        medications: List[dict],
-        doctor_signature: str
-    ) -> Prescription:
-        prescription = Prescription(
-            consultation_id=consultation_id,
-            diagnosis=diagnosis,
-            medications=medications,
-            doctor_signature=doctor_signature
-        )
-        self.db.add(prescription)
-        await self.db.flush()
-        return prescription
-
-    async def get_prescription_by_consultation_id(self, consultation_id: uuid.UUID) -> Optional[Prescription]:
-        result = await self.db.execute(
-            select(Prescription).where(Prescription.consultation_id == consultation_id)
-        )
-        return result.scalar_one_or_none()
-
-
-class PaymentRepository(BaseRepository):
-    async def create_payment(
-        self,
-        consultation_id: uuid.UUID,
-        amount: float,
-        transaction_reference: str
-    ) -> Payment:
-        payment = Payment(
-            consultation_id=consultation_id,
-            amount=amount,
-            transaction_reference=transaction_reference,
-            status="pending"
-        )
-        self.db.add(payment)
-        await self.db.flush()
-        return payment
-
-    async def get_payment_by_reference(self, reference: str) -> Optional[Payment]:
-        result = await self.db.execute(
-            select(Payment).where(Payment.transaction_reference == reference)
-        )
-        return result.scalar_one_or_none()
-
-    async def update_payment_status(self, payment_id: uuid.UUID, status: str) -> None:
+    async def increment_clicks(self, saree_id: uuid.UUID) -> None:
         await self.db.execute(
-            update(Payment)
-            .where(Payment.id == payment_id)
-            .values(status=status)
+            update(Saree)
+            .where(Saree.id == saree_id)
+            .values(clicks=Saree.clicks + 1)
         )
-
+        await self.db.flush()
 
 class AuditLogRepository(BaseRepository):
     async def create_log(

@@ -38,7 +38,7 @@ TestingSessionLocal = async_sessionmaker(
 @pytest.fixture(scope="session", autouse=True)
 async def setup_test_db():
     async with test_engine.begin() as conn:
-        from src.app.models import User, Profile, Doctor, AvailabilitySlot, Consultation, Prescription, Payment, AuditLog
+        from src.app.models import User, Saree, AuditLog
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield

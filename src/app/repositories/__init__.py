@@ -1,17 +1,13 @@
 from src.app.repositories.repos import (
     BaseRepository,
     UserRepository,
-    DoctorRepository,
-    BookingRepository,
-    PaymentRepository,
+    SareeRepository,
     AuditLogRepository
 )
 
 __all__ = [
     "BaseRepository",
     "UserRepository",
-    "DoctorRepository",
-    "BookingRepository",
-    "PaymentRepository",
+    "SareeRepository",
     "AuditLogRepository"
 ]

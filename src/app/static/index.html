@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vastra Aishwarya | Royal Maharashtrian Handlooms</title>
+  <link rel="stylesheet" href="/static/index.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="nav-container">
+      <div class="logo-group">
+        <h1>Vastra Aishwarya</h1>
+        <p>Royal Maharashtrian Handlooms</p>
+      </div>
+      <div class="nav-links" style="display: flex; gap: 1rem;">
+        <button id="btn-catalog-nav" style="display: none;">View Catalog</button>
+        <button id="btn-admin-nav">Admin Portal</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- VIEW: CUSTOMER CATALOG -->
+  <div id="view-catalog">
+    <!-- Hero Banner -->
+    <div class="hero">
+      <div class="hero-content">
+        <h2>Direct Handloom Luxury</h2>
+        <p>Skip the Instagram message loops. Browse our real-time inventory of pure Banarasi, Kanjeevaram, and Organza sarees. Order directly on WhatsApp in one click.</p>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Search & Filters -->
+      <div class="filter-panel">
+        <div class="form-group">
+          <label for="search-fabric">Fabric Type</label>
+          <input type="text" id="search-fabric" class="form-control" placeholder="e.g. Silk, Organza">
+        </div>
+        <div class="form-group">
+          <label for="search-color">Color</label>
+          <input type="text" id="search-color" class="form-control" placeholder="e.g. Red, Blue">
+        </div>
+        <div class="form-group">
+          <label for="filter-status">Availability</label>
+          <select id="filter-status" class="form-control">
+            <option value="">All Items</option>
+            <option value="in_stock">In Stock</option>
+            <option value="low_stock">Low Stock</option>
+            <option value="sold_out">Sold Out</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="min-price">Min Price (₹)</label>
+          <input type="number" id="min-price" class="form-control" placeholder="Min">
+        </div>
+        <div class="form-group">
+          <label for="max-price">Max Price (₹)</label>
+          <input type="number" id="max-price" class="form-control" placeholder="Max">
+        </div>
+      </div>
+
+      <!-- Saree Grid -->
+      <div id="saree-grid" class="saree-grid">
+        <!-- Rendered dynamically by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW: ADMIN LOGIN -->
+  <div id="view-admin-login" style="display: none;">
+    <div class="login-card">
+      <h2>Owner Login</h2>
+      <form id="login-form">
+        <div class="form-group" style="margin-bottom: 1.2rem;">
+          <label for="login-email">Email Address</label>
+          <input type="email" id="login-email" class="form-control" required placeholder="owner@zari.com">
+        </div>
+        <div class="form-group" style="margin-bottom: 1.2rem;">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" class="form-control" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn-login">Access Dashboard</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- VIEW: ADMIN DASHBOARD -->
+  <div id="view-admin-dashboard" style="display: none;">
+    <div class="container">
+      <div class="admin-header">
+        <h2>Boutique Management Hub</h2>
+        <span style="font-weight: 500;">Welcome, Meera</span>
+      </div>
+
+      <!-- Analytics Cards -->
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <h4>Total Catalog Items</h4>
+          <div id="stat-total-sarees" class="value">-</div>
+        </div>
+        <div class="analytics-card">
+          <h4>In Stock</h4>
+          <div id="stat-in-stock" class="value" style="color: var(--success-green);">-</div>
+        </div>
+        <div class="analytics-card">
+          <h4>Sold Out</h4>
+          <div id="stat-sold-out" class="value" style="color: #C53030;">-</div>
+        </div>
+        <div class="analytics-card" style="text-align: left;">
+          <h4 style="border-bottom: 1px solid var(--light-grey); padding-bottom: 0.3rem; margin-bottom: 0.5rem;">Popular Items (Views)</h4>
+          <ul id="popular-list" style="list-style: none; font-size: 0.85rem; padding-left: 0;">
+            <!-- Rendered dynamically -->
+          </ul>
+        </div>
+      </div>
+
+      <!-- Saree Table Manager -->
+      <div class="admin-header" style="border-bottom: none; margin-bottom: 1rem;">
+        <h3>Saree Inventory</h3>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 60px;">Image</th>
+              <th>Product Title</th>
+              <th>Fabric</th>
+              <th>Price</th>
+              <th>Stock Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-saree-tbody">
+            <!-- Rendered dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Floating Action Button to Add Saree -->
+    <button class="btn-float-add" onclick="openAddSareeModal()">+</button>
+  </div>
+
+  <!-- MODAL: PRODUCT DETAIL -->
+  <div id="modal-product" class="modal-overlay" onclick="if(event.target === this) closeProductModal()">
+    <div class="modal-container">
+      <button class="close-modal" onclick="closeProductModal()">&times;</button>
+      <div class="modal-grid">
+        <img id="modal-img" class="modal-image" src="" alt="Saree Image">
+        <div class="modal-details">
+          <h2 id="modal-title" class="modal-title">Saree Title</h2>
+          <div id="modal-price" class="modal-price">₹0.00</div>
+          
+          <div class="modal-specs">
+            <div class="spec-item">
+              <span>Fabric</span>
+              <span id="modal-fabric">-</span>
+            </div>
+            <div class="spec-item">
+              <span>Color</span>
+              <span id="modal-color">-</span>
+            </div>
+            <div class="spec-item" style="grid-column: span 2; margin-top: 0.5rem;">
+              <span>Availability</span>
+              <span id="modal-status">-</span>
+            </div>
+          </div>
+
+          <p id="modal-desc" class="modal-desc">Saree description text goes here.</p>
+
+          <!-- Promo Code Section -->
+          <div style="margin-bottom: 1.5rem; background: var(--soft-cream); padding: 0.8rem; border-radius: 6px; border: 1px solid var(--border-grey);">
+            <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--primary-maroon);">Promo Coupon</label>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.3rem;">
+              <input type="text" id="promo-input" class="form-control" placeholder="e.g. WELCOME10" style="padding: 0.4rem; font-size: 0.85rem;">
+              <button type="button" id="btn-promo-apply" class="btn-card-action" style="padding: 0.4rem 1rem; font-size: 0.85rem;">Apply</button>
+            </div>
+            <span id="promo-message" style="font-size: 0.8rem; display: block; margin-top: 0.3rem; font-weight: 500;"></span>
+          </div>
+
+          <!-- Dynamic UPI QR Code Section -->
+          <div id="upi-payment-section" style="margin-bottom: 1.5rem; display: none; padding: 1rem; border: 1px dashed var(--royal-gold); border-radius: 6px; text-align: center; background-color: var(--soft-cream);">
+            <h4 style="font-family: var(--font-heading); color: var(--primary-maroon); font-size: 0.95rem; margin-bottom: 0.5rem;">Quick UPI Payment</h4>
+            <img id="upi-qr" src="" style="width: 150px; height: 150px; margin-bottom: 0.5rem; border: 2px solid white; box-shadow: var(--shadow-soft);" alt="UPI QR Code">
+            <p style="font-size: 0.75rem; color: #555;">Scan with GPay, PhonePe, or Paytm.<br>Saree is held for 30 minutes after scanning.</p>
+          </div>
+
+          <a id="btn-wa-order" class="btn-whatsapp-order" href="#">
+            <svg style="width:24px;height:24px" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.47 16.86L2.03 22L7.3 20.62C8.75 21.41 10.37 21.83 12.03 21.83H12.04C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.9C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.59 20.15 12.04 20.15C10.66 20.15 9.31 19.79 8.1 19.09L7.79 18.91L4.66 19.73L5.49 16.68L5.3 16.37C4.53 15.15 4.13 13.74 4.13 11.91C4.13 7.37 7.82 3.67 12.05 3.67M8.83 7.42C8.65 7.42 8.35 7.49 8.1 7.76C7.86 8.03 7.18 8.68 7.18 10C7.18 11.32 8.14 12.6 8.28 12.78C8.41 12.96 10.15 15.65 12.82 16.8C13.46 17.07 13.94 17.23 14.33 17.35C14.97 17.56 15.55 17.53 16.01 17.46C16.53 17.38 17.61 16.8 17.84 16.15C18.06 15.5 18.06 14.95 18 14.83C17.93 14.72 17.74 14.65 17.46 14.5C17.17 14.37 15.77 13.68 15.51 13.59C15.25 13.5 15.06 13.45 14.87 13.73C14.69 14 14.18 14.61 14.03 14.78C13.88 14.95 13.73 15 13.45 14.83C13.17 14.69 12.27 14.4 11.2 13.45C10.37 12.7 9.8 11.78 9.64 11.5C9.47 11.22 9.62 11.07 9.77 10.93C9.9 10.8 10.06 10.59 10.2 10.42C10.34 10.25 10.39 10.11 10.48 9.93C10.57 9.75 10.53 9.59 10.46 9.45C10.39 9.31 9.8 7.86 9.56 7.27C9.32 6.69 9.07 6.77 8.89 6.77C8.72 6.77 8.52 6.76 8.33 6.76C8.13 6.76 7.82 6.84 7.57 7.1C7.32 7.37 6.63 8.03 6.63 9.38C6.63 10.73 7.62 12.04 7.76 12.22C7.9 12.4 9.64 15.09 12.3 16.24C12.93 16.5 13.42 16.66 13.8 16.78C14.45 16.99 15.02 16.96 15.48 16.89C16 16.81 17.08 16.23 17.3 15.58C17.5 14.93 17.5 14.38 17.46 14.26C17.41 14.15 17.22 14.08 16.94 13.93C16.65 13.8 15.25 13.11 14.99 13.02C14.73 12.93 14.54 12.88 14.35 13.16C14.17 13.43 13.66 14.04 13.51 14.21C13.36 14.38 13.21 14.43 12.93 14.26C12.65 14.12 11.75 13.83 10.68 12.88C9.85 12.13 9.28 11.21 9.12 10.93C8.95 10.65 9.1 10.5 9.25 10.36C9.38 10.23 9.54 10.02 9.68 9.85C9.82 9.68 9.87 9.54 9.96 9.36C10.05 9.18 10.01 9.02 9.94 8.88C9.87 8.74 9.28 7.29 9.04 6.7C8.8-6.11 8.55 6.2 8.37 6.2" />
+            </svg>
+            <span id="wa-btn-text">Order via WhatsApp</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD/EDIT SAREE -->
+  <div id="modal-add-saree" class="modal-overlay" onclick="if(event.target === this) closeAddSareeModal()">
+    <div class="modal-container" style="max-width: 500px;">
+      <button class="close-modal" onclick="closeAddSareeModal()">&times;</button>
+      <div style="padding: 2rem;">
+        <h2 id="saree-modal-title" style="font-family: var(--font-heading); color: var(--primary-maroon); margin-bottom: 1.5rem;">Add New Saree</h2>
+        <form id="saree-form">
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="form-title">Saree Title</label>
+            <input type="text" id="form-title" class="form-control" required placeholder="e.g. Royal Maroon Kanjeevaram">
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div class="form-group">
+              <label for="form-fabric">Fabric</label>
+              <input type="text" id="form-fabric" class="form-control" required placeholder="e.g. Kanjeevaram Silk">
+            </div>
+            <div class="form-group">
+              <label for="form-color">Color</label>
+              <input type="text" id="form-color" class="form-control" required placeholder="e.g. Maroon Red">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="form-price">Price (₹)</label>
+            <input type="number" id="form-price" class="form-control" required min="0" step="0.01" placeholder="e.g. 4500">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="form-image-url">Image URL</label>
+            <input type="text" id="form-image-url" class="form-control" required placeholder="http://... or select upload below">
+            <div style="margin-top: 0.5rem;">
+              <span style="font-size: 0.8rem; color:#666;">Or upload local image file:</span>
+              <input type="file" id="file-upload" accept="image/*" style="font-size: 0.85rem; margin-top: 0.2rem;">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="form-description">Product Description</label>
+            <textarea id="form-description" class="form-control" required rows="3" placeholder="Describe the weaving style, care instructions, pallu details..."></textarea>
+          </div>
+
+          <button type="submit" class="btn-login" style="margin-top: 0;">Save Saree Listing</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/index.js"></script>
+</body>
+</html>

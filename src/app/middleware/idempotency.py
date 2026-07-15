@@ -3,6 +3,9 @@ import redis.asyncio as aioredis
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from src.app.config import settings
+import structlog
+
+logger = structlog.get_logger()
 
 class IdempotencyMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, redis_url: str):
@@ -10,12 +13,6 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
         self.redis_url = redis_url
 
     async def dispatch(self, request: Request, call_next):
-        # Resolve Redis client from application state first, supporting testing injections
-        redis_client = getattr(request.app.state, "redis", None)
-        if redis_client is None:
-            redis_client = aioredis.from_url(self.redis_url, decode_responses=True)
-            request.app.state.redis = redis_client
-
         # We only apply idempotency to write operations
         if request.method not in ("POST", "PUT", "PATCH"):
             return await call_next(request)
@@ -24,8 +21,23 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
         if not idempotency_key:
             return await call_next(request)
 
+        # Resolve Redis client, falling back gracefully if offline
+        redis_client = getattr(request.app.state, "redis", None)
+        if redis_client is None:
+            try:
+                redis_client = aioredis.from_url(self.redis_url, decode_responses=True)
+                await redis_client.ping()
+                request.app.state.redis = redis_client
+            except Exception:
+                logger.warning("redis_offline_skipping_idempotency", url=self.redis_url)
+                return await call_next(request)
+
         redis_key = f"idempotency:{idempotency_key}"
-        cached_status = await redis_client.get(redis_key)
+        try:
+            cached_status = await redis_client.get(redis_key)
+        except Exception:
+            logger.warning("redis_query_failed_skipping_idempotency")
+            return await call_next(request)
 
         if cached_status == "processing":
             return Response(
@@ -44,7 +56,10 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
             )
 
         # Set to processing in Redis
-        await redis_client.setex(redis_key, 300, "processing")
+        try:
+            await redis_client.setex(redis_key, 300, "processing")
+        except Exception:
+            pass
 
         try:
             response = await call_next(request)
@@ -61,7 +76,10 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                     "headers": {k: v for k, v in response.headers.items() if k.lower() not in ("content-length",)}
                 }
                 # Cache response for 24 hours
-                await redis_client.setex(redis_key, 86400, json.dumps(cache_payload))
+                try:
+                    await redis_client.setex(redis_key, 86400, json.dumps(cache_payload))
+                except Exception:
+                    pass
 
             return Response(
                 content=response_body,
@@ -71,5 +89,8 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
             )
         except Exception as e:
             # Delete key on exception to allow retry
-            await redis_client.delete(redis_key)
+            try:
+                await redis_client.delete(redis_key)
+            except Exception:
+                pass
             raise e
